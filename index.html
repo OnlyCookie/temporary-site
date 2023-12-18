@@ -1,9 +1,28 @@
+<!DOCTYPE html>
 <head>
   <title>Test site</title>
+  <script type="test/javascript">
+    const password = 'testing123'
+    function passwordCheck() {
+      if (document.querySelector('input#code-box').value === password) {
+        console.log('Password Correct');
+      }
+      else {
+        console.log('Incorrect Password');
+        document.querySelector('p#error-message').innerText = "Incorrect Password. Please try again";
+      }
+    }
+  </script>
 </head>
 <body>
   <main>
     <h1>Test Site 123</h1>
     <p>This is a test site to test GitHub Pages.</p>
+    <form>
+      <p style="color:red" id="error-message"></p>
+      <label for="code-box">Code for the next level:</label>
+      <input id="code-box" type="text">
+      <button type="button onclick="passwordCheck()">
+    </form>
   </main>
 </body>
