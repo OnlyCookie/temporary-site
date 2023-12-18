@@ -3,9 +3,11 @@
   <title>Greetings</title>
   <script type="text/javascript">
     const password = 'testing123'
+    const forward nextMissionSite = '/well-done-3817.html'
     function passwordCheck() {
       if (document.querySelector('input#code-box').value === password) {
         console.log('Password Correct');
+        location.href = nextMissionSite;
       }
       else {
         console.log('Incorrect Password');
