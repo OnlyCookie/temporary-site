@@ -1,10 +1,35 @@
+<!DOCTYPE html>
 <head>
-  <title>Test site page 2</title>
+  <title>Congratulations . . Not really.</title>
+  <script type="text/javascript">
+    const password = '321testing';
+    const nextMissionSite = '/temporary-site/final-193812.html';
+    
+    function passwordCheck() {
+      if (document.querySelector('input#code-box').value === password) {
+        console.log('Password Correct');
+        location.href = nextMissionSite;
+      }
+      else {
+        console.log('Incorrect Password');
+        document.querySelector('p#error-message').innerText = "Incorrect Password. Please try again";
+      }
+    }
+  </script>
 </head>
 <body>
   <main>
-    <h1>Test Site 123</h1>
-    <p>This is a test site to test GitHub Pages.</p>
-    <p>This is page 2 of the app.</p>
+    <h1>Congratulations . . . Not really. . .</h1>
+    <p>Congratulations! You have successfully cleared the first stage. You are reaching there . . .</p>
+    <h3>STAGE 2: LOOK WITHIN YOURSELF</h3>
+    <p>The actual key is actually with you to begin with. Find it and key in the code here.</p>
+    <p>Hint: Remember what is given to you today: drink? Card?</p>
+    <br/>
+    <form>
+      <label for="code-box">Code to proceed:</label>
+      <input id="code-box" type="text">
+      <button type="button" onclick="passwordCheck()">Submit</button>
+    </form>
+    <p style="color:red" id="error-message"></p>
   </main>
 </body>
