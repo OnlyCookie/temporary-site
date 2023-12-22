@@ -1,0 +1,211 @@
+<!DOCTYPE html>
+<head>
+	<meta charset="UTF-8">
+	<title>Test Site</title>
+	<script type="text/javascript">
+		const COLOUR_VALUE_CALCULATE_OFFSET = 25;
+		const COLOUR_VALUE_CALCULATE_MULTIPLIER = 6.5;
+		
+		function convertToColour(value) {
+			value = Math.abs(parseInt(value)+ COLOUR_VALUE_CALCULATE_OFFSET);
+			value *= COLOUR_VALUE_CALCULATE_MULTIPLIER;
+			value = Math.min(450, value);
+			value -= 225;
+			
+			
+			blue = value < 0 ? parseInt(255 + value).toString(16).padStart(2, '0') : 'ff';
+			red = value >= 0 ? parseInt(255 - value).toString(16).padStart(2, '0') : 'ff';
+			green = parseInt(255-Math.abs(value)).toString(16).padStart(2, '0');
+			return `#${red}${green}${blue}`;
+		}
+		
+		function clearTextArea() {
+			document.querySelector('textarea').value = '';
+		}
+		
+		function updateTextArea(value) {
+			document.querySelector('textarea').value += value + '\n'
+		}
+		
+		let boxcarArray = [];
+		
+		function addRssiValue(value) {
+			boxcarArray.push(value);
+			
+			if (boxcarArray.length >= 8) {
+				boxcarArray = boxcarArray.slice(boxcarArray.length - 7);
+			}
+		}
+		
+		function getBoxcarMean() {
+			return boxcarArray.reduce((accumulator, value) => {return accumulator + value}) / boxcarArray.length;
+		}
+		
+		function updateBackground(value) {
+			document.querySelector('div#hotcold').style.backgroundColor = value;
+		}
+		
+		let lastAdvertisement = null;
+		
+		function handleAdvertisementEvent(event) {
+			if (lastAdvertisement === null) {
+				lastAdvertisement = Date.now();
+			}
+			const timeDifference = Date.now() - lastAdvertisement;
+			lastAdvertisement = Date.now();
+			
+			strength = event.rssi - (timeDifference/100);
+			
+			clearTextArea();
+			updateTextArea(":Strength:");
+			updateTextArea(strength);
+			updateTextArea(":RSSI:");
+			updateTextArea(event.rssi);
+			addRssiValue(strength);
+			updateTextArea(":BoxCar:");
+			updateTextArea(boxcarArray);
+			updateTextArea(":BoxCarMean:");
+			updateTextArea(getBoxcarMean());
+			updateTextArea(":Delay:");
+			updateTextArea(timeDifference);
+			
+			updateBackground(convertToColour(getBoxcarMean()));
+		}
+		
+		function hideStatus() {
+			document.querySelector('h1#warmer').classList.add('hidden');
+			document.querySelector('h1#colder').classList.add('hidden');
+			document.querySelector('h1#same').classList.add('hidden');
+		}
+		
+		function showWarmer() {
+			document.querySelector('h1#warmer').classList.remove('hidden');
+		}
+		
+		function showColder() {
+			document.querySelector('h1#colder').classList.remove('hidden');
+		}
+		
+		function showSame() {
+			document.querySelector('h1#same').classList.remove('hidden');
+		}
+		
+		function updateCounter(value) {
+			document.querySelector('span#counter').innerText = value;
+		}
+		
+		let screenLock = null;
+		let previousStrength = -999;
+		let counter = 0;
+		
+		async function testBluetooth() {
+			try {
+				screenLock = await navigator.wakeLock.request('screen');
+			}
+			catch (err) {
+				updateTextArea('Error caught:');
+				updateTextArea(err);
+				return;
+			}
+			
+			setInterval( 
+				() => {
+					currentStage = counter % 5;
+					counter ++;
+					updateCounter(5 - currentStage);
+					
+					if (currentStage !== 0) {
+						return;
+					}
+					
+					hideStatus();
+					currentStrength = getBoxcarMean();
+					strengthDifference = currentStrength - previousStrength;
+					differenceAbs = Math.abs(strengthDifference);
+					
+					if (differenceAbs < 4) {
+						showSame();
+						return;
+					}
+					
+					previousStrength = currentStrength;
+					
+					if (strengthDifference > 0) {
+						showWarmer();
+					}
+					else {
+						showColder();
+					}
+				},
+				1000
+			);
+
+			document.querySelector('button#start').style.display='none';
+			hideStatus();
+		
+			let availability;
+			try {
+				availability = await navigator.bluetooth.getAvailability();
+			}
+			catch (err) {
+				updateTextArea('Error caught:');
+				updateTextArea(err);
+				return;
+			}
+			
+			updateTextArea('Availability:');
+			updateTextArea(availability);
+		
+			let requestedDevice;
+			try {
+				requestedDevice = await navigator.bluetooth.requestDevice({'acceptAllDevices': true});
+			}
+			catch (err) {
+				updateTextArea('Error caught:');
+				updateTextArea(err);
+				return;
+			}
+			
+			updateTextArea('Device info: ');
+			updateTextArea(requestedDevice.id);
+			updateTextArea(requestedDevice.name);
+			
+			try {
+				await requestedDevice.watchAdvertisements();
+				requestedDevice.addEventListener('advertisementreceived', handleAdvertisementEvent);
+			}
+			catch (err) {
+				updateTextArea('Error caught:');
+				updateTextArea(err);
+				return;
+			}
+		}
+	</script>
+	<style>
+		h1 {
+			font-size: 32pt;
+		}
+		
+		h1.hidden {
+			display: none;
+		}
+	</style>
+</head>
+<body>
+	<main>
+		<h1 style="text-align: center; border: 2px solid black; border-radius: 5px; margin: 1em;">Present Detector 9000 Prototype</h1>
+		<div id="hotcold" style="size: auto; text-align: center; border: 1px solid black; margin: 3em;">
+			<h1>You are</h1>
+			<h1 id="warmer" style="color: orange;">🔥 WARMER 🔥</h1>
+			<h1 id="colder" style="color: #6666FF;">⛄ colder ⛄</h1>
+			<h1 id="same">About the same as before 🤷🏻</h1>
+			<h1>Next update in: <span id="counter"></span></h1>
+		</div>
+		<div style="margin-top: 200px;">
+			<p>Debug section . . . Ignore me . . . </p>
+			<button id="start" style="display: block" onclick="testBluetooth()">Click me to start!</button>
+			<textarea readonly=true" cols=80 rows=16></textarea>
+		</div>
+	</main>
+	
+</body>
